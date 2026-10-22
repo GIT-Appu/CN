@@ -1,8 +1,41 @@
-#include <arpa/inet.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#include <sys/socket.h>
+#include <arpa/inet.h>
 #include <unistd.h>
-#define PORT 12355
-int main(void) { int s=socket(AF_INET,SOCK_DGRAM,0); struct sockaddr_in a={.sin_family=AF_INET,.sin_addr.s_addr=htonl(INADDR_ANY),.sin_port=htons(PORT)}, client; socklen_t len=sizeof(client); char b[1024]; if(s<0||bind(s,(struct sockaddr *)&a,sizeof(a))<0){perror("server setup");return EXIT_FAILURE;} printf("UDP server listening on %d...\n",PORT); ssize_t n=recvfrom(s,b,sizeof(b)-1,0,(struct sockaddr *)&client,&len);if(n>0){b[n]='\0';printf("Client: %s\n",b);const char *r="Hello from UDP server";sendto(s,r,strlen(r),0,(struct sockaddr *)&client,len);}close(s);return 0; }
+
+#define PORT 12345
+
+int main() {
+    int sockfd;
+    char buffer[1024];
+    struct sockaddr_in server_addr, client_addr;
+    socklen_t len;
+
+    // Create socket
+    sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = INADDR_ANY;
+    server_addr.sin_port = htons(PORT);
+
+    // Bind
+    bind(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr));
+
+    printf("UDP Server is running...\n");
+
+    len = sizeof(client_addr);
+
+    // Receive message
+    recvfrom(sockfd, buffer, sizeof(buffer), 0,
+             (struct sockaddr *)&client_addr, &len);
+
+    printf("Client: %s\n", buffer);
+
+    // Send response
+    char *msg = "Hello from UDP server";
+    sendto(sockfd, msg, strlen(msg)+1, 0,
+           (struct sockaddr *)&client_addr, len);
+
+    close(sockfd);
+    return 0;
+}
