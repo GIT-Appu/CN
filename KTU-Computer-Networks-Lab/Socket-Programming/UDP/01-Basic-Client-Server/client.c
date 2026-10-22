@@ -1,8 +1,37 @@
-#include <arpa/inet.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#include <sys/socket.h>
+#include <arpa/inet.h>
 #include <unistd.h>
-#define PORT 12355
-int main(void) { int s=socket(AF_INET,SOCK_DGRAM,0);struct sockaddr_in a={.sin_family=AF_INET,.sin_port=htons(PORT)};char b[1024];const char *m="Hello from UDP client";if(s<0||inet_pton(AF_INET,"127.0.0.1",&a.sin_addr)!=1){perror("socket/address");return EXIT_FAILURE;}sendto(s,m,strlen(m),0,(struct sockaddr *)&a,sizeof(a));ssize_t n=recvfrom(s,b,sizeof(b)-1,0,NULL,NULL);if(n>0){b[n]='\0';printf("Server: %s\n",b);}close(s);return 0; }
+
+#define PORT 12345
+
+int main() {
+    int sockfd;
+    char buffer[1024];
+    struct sockaddr_in server_addr;
+    socklen_t len;
+
+    // Create socket
+    sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(PORT);
+    server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+
+    char *msg = "Hello from UDP client";
+
+    // Send message
+    sendto(sockfd, msg, strlen(msg)+1, 0,
+           (struct sockaddr *)&server_addr, sizeof(server_addr));
+
+    len = sizeof(server_addr);
+
+    // Receive response
+    recvfrom(sockfd, buffer, sizeof(buffer), 0,
+             (struct sockaddr *)&server_addr, &len);
+
+    printf("Server: %s\n", buffer);
+
+    close(sockfd);
+    return 0;
+}
