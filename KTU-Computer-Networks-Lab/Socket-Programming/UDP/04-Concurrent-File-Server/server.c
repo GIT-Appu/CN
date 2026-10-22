@@ -1,10 +1,94 @@
-#include <arpa/inet.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <unistd.h>
-#define PORT 12358
-#define BLOCK 1024
-int main(void){int s=socket(AF_INET,SOCK_DGRAM,0);struct sockaddr_in a={.sin_family=AF_INET,.sin_addr.s_addr=htonl(INADDR_ANY),.sin_port=htons(PORT)};if(s<0||bind(s,(struct sockaddr *)&a,sizeof(a))<0){perror("server setup");return EXIT_FAILURE;}printf("UDP file server listening on %d...\n",PORT);for(;;){struct sockaddr_in c;socklen_t l=sizeof(c);char name[256];ssize_t n=recvfrom(s,name,sizeof(name)-1,0,(struct sockaddr *)&c,&l);if(n<0)continue;name[n]='\0';pid_t p=fork();if(p==0){FILE *f=fopen(name,"rb");char block[BLOCK];if(!f){sendto(s,"ERROR: file not found",21,0,(struct sockaddr *)&c,l);_exit(0);}size_t got;while((got=fread(block,1,sizeof(block),f))>0)sendto(s,block,got,0,(struct sockaddr *)&c,l);fclose(f);sendto(s,"__EOF__",7,0,(struct sockaddr *)&c,l);_exit(0);}}}
+#include<stdio.h>
+#include<stdlib.h>
+#include<string.h>
+#include<unistd.h>
+#include<arpa/inet.h>
+
+#define PORT 9000
+#define BUFFER_SIZE 2048
+
+int main()
+{
+    int sockfd;
+
+    struct sockaddr_in server,client;
+
+    socklen_t len=sizeof(client);
+
+    char filename[100];
+
+    char buffer[BUFFER_SIZE];
+
+    sockfd=socket(AF_INET,SOCK_DGRAM,0);
+
+    server.sin_family=AF_INET;
+    server.sin_addr.s_addr=INADDR_ANY;
+    server.sin_port=htons(PORT);
+
+    bind(sockfd,(struct sockaddr *)&server,sizeof(server));
+
+    printf("====================================\n");
+    printf(" UDP Concurrent File Server Started\n");
+    printf(" Listening on Port %d\n",PORT);
+    printf("====================================\n");
+
+    while(1)
+    {
+        memset(filename,0,sizeof(filename));
+
+        recvfrom(sockfd,
+                 filename,
+                 sizeof(filename),
+                 0,
+                 (struct sockaddr *)&client,
+                 &len);
+
+        if(fork()==0)
+        {
+            FILE *fp;
+
+            fp=fopen(filename,"r");
+
+            memset(buffer,0,sizeof(buffer));
+
+            sprintf(buffer,
+                    "Handled by Server PID : %d\n\n",
+                    getpid());
+
+            if(fp==NULL)
+            {
+                strcat(buffer,
+                       "Requested File Not Found.\n");
+            }
+            else
+            {
+                char line[256];
+
+                while(fgets(line,sizeof(line),fp)!=NULL)
+                {
+                    strcat(buffer,line);
+                }
+
+                fclose(fp);
+            }
+
+            sendto(sockfd,
+                   buffer,
+                   strlen(buffer)+1,
+                   0,
+                   (struct sockaddr *)&client,
+                   len);
+
+            printf("Request for %s served by PID %d\n",
+                    filename,
+                    getpid());
+
+            exit(0);
+        }
+    }
+
+    close(sockfd);
+
+    return 0;
+}
+
