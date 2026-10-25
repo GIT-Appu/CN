@@ -18,13 +18,21 @@ int main() {
 
     connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
 
-    printf("Enter order of matrix (N): ");
-    scanf("%d", &N);
+    printf("Enter order of matrix (N, 1-10): ");
+    if (scanf("%d", &N) != 1 || N < 1 || N > 10) {
+        fprintf(stderr, "Matrix order must be between 1 and 10.\n");
+        close(sock);
+        return 1;
+    }
 
     printf("\nEnter matrix elements:\n");
     for(int i = 0; i < N; i++) {
         for(int j = 0; j < N; j++) {
-            scanf("%d", &matrix[i][j]);
+            if (scanf("%d", &matrix[i][j]) != 1) {
+                fprintf(stderr, "Please enter integers only.\n");
+                close(sock);
+                return 1;
+            }
         }
     }
 
