@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
 #include <arpa/inet.h>
 #include <unistd.h>
 
@@ -22,12 +21,16 @@ int main() {
     printf("Enter order of matrix (N): ");
     scanf("%d", &N);
 
-    srand(time(0));
-
-    printf("\nGenerated Matrix:\n");
+    printf("\nEnter matrix elements:\n");
     for(int i = 0; i < N; i++) {
         for(int j = 0; j < N; j++) {
-            matrix[i][j] = rand() % 51 ; // filling with 0 to 50
+            scanf("%d", &matrix[i][j]);
+        }
+    }
+
+    printf("\nEntered Matrix:\n");
+    for(int i = 0; i < N; i++) {
+        for(int j = 0; j < N; j++) {
             printf("%3d ", matrix[i][j]);
         }
         printf("\n");
